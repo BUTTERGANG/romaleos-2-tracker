@@ -49,6 +49,36 @@ async def on_shutdown() -> None:
 
 # ── Helpers ────────────────────────────────────────────────────────────
 
+def _parse_optional_price(value: str | None) -> float | None:
+    """Convert an optional form/query price, treating blank input as unset."""
+    if value is None or not value.strip():
+        return None
+    try:
+        return float(value)
+    except ValueError:
+        return None
+
+
+def _matches_filters(
+    listing: dict[str, Any],
+    price_min: float | None,
+    price_max: float | None,
+    condition: str,
+    size_filter: str,
+) -> bool:
+    """Apply dashboard filters consistently to live API results."""
+    price = float(listing.get("price") or 0)
+    if price_min is not None and price < price_min:
+        return False
+    if price_max is not None and price > price_max:
+        return False
+    if condition and listing.get("condition") != condition:
+        return False
+    if size_filter and str(listing.get("size") or "") != size_filter:
+        return False
+    return True
+
+
 def _get_listings(
     search: str = "",
     sort: str = "newlyListed",
@@ -64,11 +94,13 @@ def _get_listings(
     page = 1 if search or sort != "newlyListed" else None
 
     results = []
+    live_search_succeeded = False
     if page is not None:
         # Live search
         try:
             client = get_client()
             items = client.search(query, limit=limit, sort=sort)
+            live_search_succeeded = True
             for item in items:
                 parsed = parse_listing(item)
                 # Upsert into DB
@@ -88,11 +120,15 @@ def _get_listings(
                 )
                 results.append(parsed)
             conn.commit()
+            results = [
+                listing for listing in results
+                if _matches_filters(listing, price_min, price_max, condition, size_filter)
+            ]
         except Exception as e:
             logger.error("eBay search failed: %s", e)
             # Fall through to cached
 
-    if not results:
+    if not live_search_succeeded:
         # Cached results
         sql = "SELECT * FROM listings WHERE is_active = 1"
         params = []
@@ -125,14 +161,16 @@ async def index(
     request: Request,
     search: str = Query(""),
     sort: str = Query("newlyListed"),
-    price_min: float | None = Query(None),
-    price_max: float | None = Query(None),
+    price_min: str = Query(""),
+    price_max: str = Query(""),
     condition: str = Query(""),
     size: str = Query(""),
 ) -> HTMLResponse:
+    parsed_price_min = _parse_optional_price(price_min)
+    parsed_price_max = _parse_optional_price(price_max)
     listings = _get_listings(
-        search=search, sort=sort, price_min=price_min,
-        price_max=price_max, condition=condition, size_filter=size,
+        search=search, sort=sort, price_min=parsed_price_min,
+        price_max=parsed_price_max, condition=condition, size_filter=size,
     )
     # Gather unique sizes for filter dropdown
     conn = get_conn()
@@ -166,8 +204,8 @@ async def index(
             "max_price": max_price,
             "search": search,
             "sort": sort,
-            "price_min": price_min or "",
-            "price_max": price_max or "",
+            "price_min": price_min,
+            "price_max": price_max,
             "condition": condition,
             "size_filter": size,
             "sizes": sizes,
