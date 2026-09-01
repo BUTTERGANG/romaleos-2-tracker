@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ROMALEOS 2 Tracker {% block title %}{% endblock %}</title>
+    <meta name="description" content="Live Nike Romaleos 2 eBay price tracker — filter by size, price and condition, and get Discord alerts when a matching pair is listed.">
+    <meta property="og:title" content="ROMALEOS 2 Tracker">
+    <meta property="og:description" content="Live Nike Romaleos 2 eBay listings with size/price filters and Discord alerts.">
+    <meta property="og:type" content="website">
+    <meta name="theme-color" content="#0f1117">
     <link rel="stylesheet" href="/static/style.css">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='80' font-size='80'>👟</text></svg>">
 </head>
@@ -14,15 +19,15 @@
             <div class="nav-links">
                 <a href="/" {% if request.url.path == '/' %}class="active"{% endif %}>Listings</a>
                 <a href="/watches" {% if request.url.path == '/watches' %}class="active"{% endif %}>Watches</a>
-                <a href="https://github.com/BUTTERGANG/romaleos-2-tracker" target="_blank" class="ext">GitHub</a>
+                <a href="https://github.com/BUTTERGANG/romaleos-2-tracker" target="_blank" rel="noopener" class="ext">GitHub</a>
             </div>
             <div class="nav-status">
                 {% if ebay_configured %}
-                <span class="badge green">eBay ✓</span>
+                <span class="badge green" title="eBay API connected">eBay ✓</span>
                 {% elif has_credentials %}
-                <span class="badge yellow">eBay ⚡</span>
+                <span class="badge yellow" title="Partial eBay credentials">eBay ⚡</span>
                 {% else %}
-                <span class="badge red">eBay ✗</span>
+                <span class="badge red" title="eBay API not configured">eBay ✗</span>
                 {% endif %}
             </div>
         </div>
@@ -35,31 +40,41 @@
     </footer>
     <div id="toast-container"></div>
     <script>
-        // Toast helper
         function showToast(html) {
             const el = document.getElementById('toast-container');
             el.innerHTML = html;
             setTimeout(() => { el.innerHTML = ''; }, 4000);
         }
 
-        // Manual refresh via HTMX-style fetch
+        // Manual "Refresh from eBay": poll, then swap in the new listing grid
+        // (and stats) without a jarring full-page reload.
         document.addEventListener('click', async (e) => {
             const btn = e.target.closest('[data-refresh]');
             if (!btn) return;
             e.preventDefault();
+            const label = btn.textContent;
             btn.disabled = true;
             btn.textContent = 'Refreshing…';
+            document.querySelector('.listings-grid')?.classList.add('is-loading');
             try {
                 const resp = await fetch('/api/refresh', { method: 'POST' });
-                const html = await resp.text();
-                showToast(html);
+                showToast(await resp.text());
+                if (resp.ok) {
+                    const page = await (await fetch(window.location.href)).text();
+                    const doc = new DOMParser().parseFromString(page, 'text/html');
+                    for (const sel of ['.listings-grid', '.stats-row', '.freshness']) {
+                        const fresh = doc.querySelector(sel);
+                        const cur = document.querySelector(sel);
+                        if (fresh && cur) cur.replaceWith(fresh);
+                    }
+                }
             } catch (err) {
                 showToast(`<div class="toast error">❌ Network error: ${err.message}</div>`);
+            } finally {
+                document.querySelector('.listings-grid')?.classList.remove('is-loading');
+                btn.disabled = false;
+                btn.textContent = label;
             }
-            btn.disabled = false;
-            btn.textContent = '🔄 Refresh from eBay';
-            // Reload listings
-            window.location.reload();
         });
     </script>
     {% block scripts %}{% endblock %}

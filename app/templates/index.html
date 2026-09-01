@@ -10,14 +10,31 @@
 {% if not ebay_configured %}
 <div class="alert warning">
     <strong>⚠️ eBay API not configured.</strong> Set <code>EBAY_CLIENT_ID</code> and <code>EBAY_CLIENT_SECRET</code>
-    in your <code>.env</code> file to enable live search. For now, showing cached/sample data.
+    (Replit Secrets, or a local <code>.env</code>) to enable live search. Showing cached data only.
+</div>
+{% elif syncing %}
+<div class="alert warning">
+    <strong>⏳ First sync in progress.</strong> The tracker is fetching listings from eBay now &mdash;
+    hit <em>Refresh</em> in a few seconds.
 </div>
 {% endif %}
 
+<div class="freshness">
+    <span class="freshness-text">
+        {% if as_of %}
+        Listings as of <strong>{{ as_of_age }}</strong>
+        <span class="freshness-note">· eBay data is at most {{ stale_hours }}h old</span>
+        {% else %}
+        Not yet synced with eBay
+        {% endif %}
+    </span>
+    <button data-refresh class="btn btn-primary btn-sm">🔄 Refresh from eBay</button>
+</div>
+
 <div class="stats-row">
     <div class="stat-card">
-        <span class="stat-label">Active Listings</span>
-        <span class="stat-value">{{ unique_items }}</span>
+        <span class="stat-label">Showing</span>
+        <span class="stat-value">{{ shown_count }}<span class="stat-sub">/ {{ total_fresh }}</span></span>
     </div>
     <div class="stat-card">
         <span class="stat-label">Avg Price</span>
@@ -31,55 +48,73 @@
         <span class="stat-label">Max</span>
         <span class="stat-value">${{ max_price }}</span>
     </div>
-    <div class="stat-card action">
-        <button data-refresh class="btn btn-primary">🔄 Refresh from eBay</button>
-    </div>
 </div>
 
-<div class="filters">
-    <form method="GET" action="/" class="filter-form">
-        <input type="text" name="search" placeholder="Search…" value="{{ search }}">
-        <select name="sort">
+<form method="GET" action="/" class="filters filter-form">
+    <div class="filter-field filter-grow">
+        <label for="f-search">Search</label>
+        <input type="text" id="f-search" name="search" placeholder="e.g. volt, size 10" value="{{ search }}">
+    </div>
+    <div class="filter-field">
+        <label for="f-sort">Sort</label>
+        <select id="f-sort" name="sort">
             <option value="newlyListed" {% if sort == 'newlyListed' %}selected{% endif %}>Newest</option>
-            <option value="price" {% if sort == 'price' %}selected{% endif %}>Price Low</option>
-            <option value="-price" {% if sort == '-price' %}selected{% endif %}>Price High</option>
-            <option value="endingSoonest" {% if sort == 'endingSoonest' %}selected{% endif %}>Ending Soon</option>
+            <option value="price" {% if sort == 'price' %}selected{% endif %}>Price ↑</option>
+            <option value="-price" {% if sort == '-price' %}selected{% endif %}>Price ↓</option>
+            <option value="endingSoonest" {% if sort == 'endingSoonest' %}selected{% endif %}>Ending soon</option>
         </select>
-        <input type="number" name="price_min" placeholder="Min $" value="{{ price_min }}" step="0.01">
-        <input type="number" name="price_max" placeholder="Max $" value="{{ price_max }}" step="0.01">
-        <select name="condition">
-            <option value="">Any condition</option>
+    </div>
+    <div class="filter-field filter-narrow">
+        <label for="f-pmin">Min $</label>
+        <input type="number" id="f-pmin" name="price_min" placeholder="0" value="{{ price_min }}" step="0.01" min="0">
+    </div>
+    <div class="filter-field filter-narrow">
+        <label for="f-pmax">Max $</label>
+        <input type="number" id="f-pmax" name="price_max" placeholder="Any" value="{{ price_max }}" step="0.01" min="0">
+    </div>
+    <div class="filter-field">
+        <label for="f-cond">Condition</label>
+        <select id="f-cond" name="condition">
+            <option value="">Any</option>
             {% for c in conditions %}
             <option value="{{ c }}" {% if condition == c %}selected{% endif %}>{{ c }}</option>
             {% endfor %}
         </select>
-        <select name="size">
-            <option value="">Any size</option>
+    </div>
+    <div class="filter-field">
+        <label for="f-size">Size</label>
+        <select id="f-size" name="size">
+            <option value="">Any</option>
             {% for s in sizes %}
             <option value="{{ s }}" {% if size_filter == s %}selected{% endif %}>US {{ s }}</option>
             {% endfor %}
         </select>
+    </div>
+    <div class="filter-actions">
         <button type="submit" class="btn btn-primary">Filter</button>
         <a href="/" class="btn btn-secondary">Clear</a>
-    </form>
-</div>
+    </div>
+</form>
 
 <div class="listings-grid">
     {% for listing in listings %}
     <div class="listing-card">
-        {% if listing.image_url %}
-        <img src="{{ listing.image_url }}" alt="{{ listing.title }}" class="listing-img" loading="lazy">
-        {% else %}
-        <div class="listing-img-placeholder">👟</div>
-        {% endif %}
+        <div class="listing-img-wrap">
+            {% if listing.is_new %}<span class="new-badge">NEW</span>{% endif %}
+            {% if listing.image_url %}
+            <img src="{{ listing.image_url }}" alt="{{ listing.title }}" class="listing-img" loading="lazy">
+            {% else %}
+            <div class="listing-img-placeholder">👟</div>
+            {% endif %}
+        </div>
         <div class="listing-body">
             <h3 class="listing-title">
                 <a href="{{ listing.item_url }}" target="_blank" rel="noopener">{{ listing.title[:80] }}{% if listing.title|length > 80 %}…{% endif %}</a>
             </h3>
             <div class="listing-meta">
                 <span class="listing-price">${{ "%.2f"|format(listing.price) }}</span>
-                {% if listing.shipping > 0 %}
-                <span class="listing-shipping">+${{ "%.2f"|format(listing.shipping) }} shipping</span>
+                {% if listing.shipping and listing.shipping > 0 %}
+                <span class="listing-shipping">+${{ "%.2f"|format(listing.shipping) }} ship</span>
                 {% else %}
                 <span class="listing-shipping free">Free shipping</span>
                 {% endif %}
@@ -94,8 +129,8 @@
                 {% endif %}
             </div>
             <div class="listing-footer">
-                <span class="seller">{{ listing.seller or 'Unknown' }}</span>
-                <span class="listed-date">{{ listing.listed_at[:10] if listing.listed_at else '' }}</span>
+                <span class="seller">{{ listing.seller or 'Unknown seller' }}</span>
+                {% if listing.age_label %}<span class="listed-date">{{ listing.age_label }}</span>{% endif %}
             </div>
         </div>
     </div>
@@ -103,9 +138,9 @@
     <div class="empty-state">
         <div class="empty-icon">👟</div>
         <h2>No listings found</h2>
-        <p>No Romaleos 2 found matching your filters. Try adjusting your search or come back later.</p>
+        <p>No Romaleos 2 matching your filters right now. Try widening the price range or clearing filters.</p>
         {% if not ebay_configured %}
-        <p class="hint">💡 Add your eBay API keys to <code>.env</code> and refresh to pull live data.</p>
+        <p class="hint">💡 Add your eBay API keys and refresh to pull live data.</p>
         {% endif %}
     </div>
     {% endfor %}

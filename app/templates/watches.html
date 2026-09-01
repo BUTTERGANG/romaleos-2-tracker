@@ -7,8 +7,8 @@
     <p class="subtitle">Set up alerts &mdash; get notified when the perfect pair drops</p>
 </div>
 
-<div class="watch-form-card">
-    <h2>Create a Watch</h2>
+<details class="watch-form-card" {% if not watches %}open{% endif %}>
+    <summary><span class="watch-form-toggle">New watch</span></summary>
     <form method="POST" action="/watches/add" class="watch-form">
         <div class="form-row">
             <div class="form-group">
@@ -32,17 +32,28 @@
         </div>
         <div class="form-row">
             <div class="form-group">
-                <label for="max_price">Max Price ($)</label>
-                <input type="number" name="max_price" id="max_price" placeholder="e.g. 200" step="0.01">
+                <label for="min_price">Min Price ($)</label>
+                <input type="number" name="min_price" id="min_price" placeholder="Any" step="0.01" min="0">
             </div>
             <div class="form-group">
-                <label for="min_price">Min Price ($)</label>
-                <input type="number" name="min_price" id="min_price" placeholder="e.g. 50" step="0.01">
+                <label for="max_price">Max Price ($)</label>
+                <input type="number" name="max_price" id="max_price" placeholder="Any" step="0.01" min="0">
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="webhook_url">Discord webhook URL <span class="label-hint">— optional, overrides the default channel</span></label>
+            <div class="input-with-btn">
+                <input type="url" name="webhook_url" id="webhook_url" placeholder="https://discord.com/api/webhooks/…">
+                <button type="button" class="btn btn-secondary btn-sm" data-test-webhook>Test</button>
             </div>
         </div>
         <button type="submit" class="btn btn-primary">➕ Add Watch</button>
     </form>
-</div>
+</details>
+
+{% if not ebay_configured %}
+<div class="alert warning">eBay API isn't configured, so watches won't fire until credentials are set.</div>
+{% endif %}
 
 <div class="watches-list">
     <h2>Active Watches</h2>
@@ -66,6 +77,7 @@
             </div>
             <div class="watch-stats">
                 <span class="alerts-sent">🔔 {{ watch.alerts_sent or 0 }} alerts sent</span>
+                {% if watch.webhook_url %}<span class="custom-hook" title="Sends to a custom Discord webhook">🔗 custom channel</span>{% endif %}
                 <span class="created-at">Created {{ watch.created_at[:10] }}</span>
             </div>
         </div>
@@ -85,9 +97,34 @@
         <div class="empty-icon">🔔</div>
         <h2>No watches yet</h2>
         <p>Create a watch above to get notified when a Romaleos 2 in your size and price range appears on eBay.</p>
-        <p class="hint">💡 Make sure <code>DISCORD_WEBHOOK_URL</code> is set in <code>.env</code> to receive alerts.</p>
+        <p class="hint">💡 Set <code>DISCORD_WEBHOOK_URL</code> to receive alerts.</p>
     </div>
     {% endfor %}
 </div>
 
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('click', async (e) => {
+    const btn = e.target.closest('[data-test-webhook]');
+    if (!btn) return;
+    const url = document.getElementById('webhook_url').value.trim();
+    btn.disabled = true;
+    const orig = btn.textContent;
+    btn.textContent = 'Sending…';
+    try {
+        const body = new URLSearchParams();
+        if (url) body.set('webhook_url', url);
+        const resp = await fetch('/api/test-discord', { method: 'POST', body });
+        const data = await resp.json();
+        showToast(`<div class="toast ${resp.ok ? 'success' : 'error'}">${resp.ok ? '✅' : '❌'} ${data.message}</div>`);
+    } catch (err) {
+        showToast(`<div class="toast error">❌ ${err.message}</div>`);
+    } finally {
+        btn.disabled = false;
+        btn.textContent = orig;
+    }
+});
+</script>
 {% endblock %}

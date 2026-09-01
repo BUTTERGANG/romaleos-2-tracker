@@ -161,6 +161,12 @@ body {
     font-weight: 700;
     margin-top: 4px;
 }
+.stat-sub {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-dim);
+    margin-left: 2px;
+}
 
 /* ── Buttons ── */
 .btn {
@@ -206,31 +212,73 @@ body {
 .btn-danger:hover { background: rgba(248, 81, 73, 0.25); }
 .btn-sm { padding: 4px 12px; font-size: 12px; }
 
-/* ── Filters ── */
-.filters {
-    margin-bottom: 24px;
+/* ── Freshness bar ── */
+.freshness {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 10px 16px;
+    margin-bottom: 16px;
+    font-size: 13px;
+    color: var(--text-dim);
 }
+.freshness-text strong { color: var(--text); }
+.freshness-note { opacity: 0.7; }
+@media (max-width: 480px) { .freshness-note { display: none; } }
+
+/* ── Filters ── */
+.filters { margin-bottom: 24px; }
 .filter-form {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
-    align-items: center;
+    gap: 10px 12px;
+    align-items: flex-end;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+}
+.filter-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1 1 130px;
+}
+.filter-field.filter-grow { flex: 3 1 200px; }
+.filter-field.filter-narrow { flex: 0 1 90px; }
+.filter-field label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 .filter-form input, .filter-form select {
-    background: var(--bg-card);
+    background: var(--bg);
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
     padding: 8px 12px;
     color: var(--text);
     font-size: 13px;
-    min-width: 100px;
-    flex: 1;
+    width: 100%;
 }
 .filter-form input:focus, .filter-form select:focus {
     outline: none;
     border-color: var(--accent);
 }
-.filter-form .btn { flex: 0 0 auto; }
+.filter-actions {
+    display: flex;
+    gap: 8px;
+    flex: 1 1 auto;
+}
+@media (max-width: 560px) {
+    .filter-field, .filter-field.filter-grow, .filter-field.filter-narrow { flex: 1 1 100%; }
+}
 
 /* ── Listing Grid ── */
 .listings-grid {
@@ -249,7 +297,24 @@ body {
     border-color: var(--accent);
     transform: translateY(-2px);
 }
+.listing-img-wrap {
+    position: relative;
+}
+.new-badge {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    z-index: 1;
+    background: var(--green);
+    color: #0b0d14;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    padding: 3px 7px;
+    border-radius: 100px;
+}
 .listing-img {
+    display: block;
     width: 100%;
     height: 200px;
     object-fit: contain;
@@ -264,6 +329,13 @@ body {
     font-size: 48px;
     background: #0b0d14;
     border-bottom: 1px solid var(--border);
+}
+
+/* Loading state for the grid during a manual refresh */
+.listings-grid.is-loading {
+    opacity: 0.5;
+    pointer-events: none;
+    transition: opacity 0.15s;
 }
 .listing-body {
     padding: 14px;
@@ -356,13 +428,19 @@ body {
     background: var(--bg-card);
     border: 1px solid var(--border);
     border-radius: var(--radius);
-    padding: 20px;
+    padding: 16px 20px;
     margin-bottom: 28px;
 }
-.watch-form-card h2 {
-    font-size: 18px;
-    margin-bottom: 16px;
+.watch-form-card > summary {
+    cursor: pointer;
+    list-style: none;
+    font-weight: 700;
+    font-size: 15px;
 }
+.watch-form-card > summary::-webkit-details-marker { display: none; }
+.watch-form-card[open] > summary { margin-bottom: 16px; }
+.watch-form-toggle::before { content: "＋ "; }
+.watch-form-card[open] > summary .watch-form-toggle::before { content: "－ "; }
 .watch-form {
     display: flex;
     flex-direction: column;
@@ -400,6 +478,18 @@ body {
     outline: none;
     border-color: var(--accent);
 }
+.label-hint {
+    text-transform: none;
+    font-weight: 400;
+    opacity: 0.7;
+}
+.input-with-btn {
+    display: flex;
+    gap: 8px;
+}
+.input-with-btn input { flex: 1; }
+.input-with-btn .btn { flex: 0 0 auto; }
+.custom-hook { color: var(--accent); }
 
 /* ── Watches List ── */
 .watches-list h2 {
