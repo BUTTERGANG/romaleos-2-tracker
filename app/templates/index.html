@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% block title %}— Live Listings{% endblock %}
+{% block content %}
+
+<div class="hero">
+    <h1>👟 Nike Romaleos 2</h1>
+    <p class="subtitle">Live eBay listings &mdash; find your pair at the right price</p>
+</div>
+
+{% if not ebay_configured %}
+<div class="alert warning">
+    <strong>⚠️ eBay API not configured.</strong> Set <code>EBAY_CLIENT_ID</code> and <code>EBAY_CLIENT_SECRET</code>
+    in your <code>.env</code> file to enable live search. For now, showing cached/sample data.
+</div>
+{% endif %}
+
+<div class="stats-row">
+    <div class="stat-card">
+        <span class="stat-label">Active Listings</span>
+        <span class="stat-value">{{ unique_items }}</span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-label">Avg Price</span>
+        <span class="stat-value">${{ avg_price }}</span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-label">Min</span>
+        <span class="stat-value">${{ min_price }}</span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-label">Max</span>
+        <span class="stat-value">${{ max_price }}</span>
+    </div>
+    <div class="stat-card action">
+        <button data-refresh class="btn btn-primary">🔄 Refresh from eBay</button>
+    </div>
+</div>
+
+<div class="filters">
+    <form method="GET" action="/" class="filter-form">
+        <input type="text" name="search" placeholder="Search…" value="{{ search }}">
+        <select name="sort">
+            <option value="newlyListed" {% if sort == 'newlyListed' %}selected{% endif %}>Newest</option>
+            <option value="price" {% if sort == 'price' %}selected{% endif %}>Price Low</option>
+            <option value="-price" {% if sort == '-price' %}selected{% endif %}>Price High</option>
+            <option value="endingSoonest" {% if sort == 'endingSoonest' %}selected{% endif %}>Ending Soon</option>
+        </select>
+        <input type="number" name="price_min" placeholder="Min $" value="{{ price_min }}" step="0.01">
+        <input type="number" name="price_max" placeholder="Max $" value="{{ price_max }}" step="0.01">
+        <select name="condition">
+            <option value="">Any condition</option>
+            {% for c in conditions %}
+            <option value="{{ c }}" {% if condition == c %}selected{% endif %}>{{ c }}</option>
+            {% endfor %}
+        </select>
+        <select name="size">
+            <option value="">Any size</option>
+            {% for s in sizes %}
+            <option value="{{ s }}" {% if size_filter == s %}selected{% endif %}>US {{ s }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit" class="btn btn-primary">Filter</button>
+        <a href="/" class="btn btn-secondary">Clear</a>
+    </form>
+</div>
+
+<div class="listings-grid">
+    {% for listing in listings %}
+    <div class="listing-card">
+        {% if listing.image_url %}
+        <img src="{{ listing.image_url }}" alt="{{ listing.title }}" class="listing-img" loading="lazy">
+        {% else %}
+        <div class="listing-img-placeholder">👟</div>
+        {% endif %}
+        <div class="listing-body">
+            <h3 class="listing-title">
+                <a href="{{ listing.item_url }}" target="_blank" rel="noopener">{{ listing.title[:80] }}{% if listing.title|length > 80 %}…{% endif %}</a>
+            </h3>
+            <div class="listing-meta">
+                <span class="listing-price">${{ "%.2f"|format(listing.price) }}</span>
+                {% if listing.shipping > 0 %}
+                <span class="listing-shipping">+${{ "%.2f"|format(listing.shipping) }} shipping</span>
+                {% else %}
+                <span class="listing-shipping free">Free shipping</span>
+                {% endif %}
+            </div>
+            <div class="listing-details">
+                {% if listing.size %}
+                <span class="tag size">US {{ listing.size }}</span>
+                {% endif %}
+                <span class="tag condition">{{ listing.condition or 'N/A' }}</span>
+                {% if listing.accepts_offer %}
+                <span class="tag offer">💰 Offers</span>
+                {% endif %}
+            </div>
+            <div class="listing-footer">
+                <span class="seller">{{ listing.seller or 'Unknown' }}</span>
+                <span class="listed-date">{{ listing.listed_at[:10] if listing.listed_at else '' }}</span>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-icon">👟</div>
+        <h2>No listings found</h2>
+        <p>No Romaleos 2 found matching your filters. Try adjusting your search or come back later.</p>
+        {% if not ebay_configured %}
+        <p class="hint">💡 Add your eBay API keys to <code>.env</code> and refresh to pull live data.</p>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+
+{% endblock %}

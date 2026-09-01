@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ROMALEOS 2 Tracker {% block title %}{% endblock %}</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='80' font-size='80'>👟</text></svg>">
+</head>
+<body>
+    <nav class="nav">
+        <div class="nav-inner">
+            <a href="/" class="logo">👟 ROMALEOS 2 Tracker</a>
+            <div class="nav-links">
+                <a href="/" {% if request.url.path == '/' %}class="active"{% endif %}>Listings</a>
+                <a href="/watches" {% if request.url.path == '/watches' %}class="active"{% endif %}>Watches</a>
+                <a href="https://github.com/BUTTERGANG/romaleos-2-tracker" target="_blank" class="ext">GitHub</a>
+            </div>
+            <div class="nav-status">
+                {% if ebay_configured %}
+                <span class="badge green">eBay ✓</span>
+                {% elif has_credentials %}
+                <span class="badge yellow">eBay ⚡</span>
+                {% else %}
+                <span class="badge red">eBay ✗</span>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+    <main class="container">
+        {% block content %}{% endblock %}
+    </main>
+    <footer class="footer">
+        <p>ROMALEOS 2 Tracker &middot; eBay Browse API &middot; BUTTERGANG</p>
+    </footer>
+    <div id="toast-container"></div>
+    <script>
+        // Toast helper
+        function showToast(html) {
+            const el = document.getElementById('toast-container');
+            el.innerHTML = html;
+            setTimeout(() => { el.innerHTML = ''; }, 4000);
+        }
+
+        // Manual refresh via HTMX-style fetch
+        document.addEventListener('click', async (e) => {
+            const btn = e.target.closest('[data-refresh]');
+            if (!btn) return;
+            e.preventDefault();
+            btn.disabled = true;
+            btn.textContent = 'Refreshing…';
+            try {
+                const resp = await fetch('/api/refresh', { method: 'POST' });
+                const html = await resp.text();
+                showToast(html);
+            } catch (err) {
+                showToast(`<div class="toast error">❌ Network error: ${err.message}</div>`);
+            }
+            btn.disabled = false;
+            btn.textContent = '🔄 Refresh from eBay';
+            // Reload listings
+            window.location.reload();
+        });
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

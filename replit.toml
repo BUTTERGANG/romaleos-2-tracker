@@ -1,0 +1,23 @@
+# Replit configuration
+# Auto-start the app with uvicorn
+
+run = "uvicorn app.main:app --host 0.0.0.0 --port 8003"
+
+[env]
+EBAY_CLIENT_ID = "{EBAY_CLIENT_ID}"
+EBAY_CLIENT_SECRET = "{EBAY_CLIENT_SECRET}"
+DISCORD_WEBHOOK_URL = "{DISCORD_WEBHOOK_URL}"
+SECRET_KEY = "{SECRET_KEY}"
+PORT = "8003"
+SEARCH_QUERY = "Nike Romaleos 2"
+POLL_INTERVAL_MINUTES = "30"
+
+[nix]
+channel = "stable-24_05"
+
+[packager]
+language = "python3"
+start = ["python3", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8003"]
+
+[deployment]
+run = ["sh", "-c", "cd $REPL_HOME && python3 -m uvicorn app.main:app --host 0.0.0.0 --port $PORT"]

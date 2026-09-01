@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}— Watches{% endblock %}
+{% block content %}
+
+<div class="hero">
+    <h1>🔔 Watches</h1>
+    <p class="subtitle">Set up alerts &mdash; get notified when the perfect pair drops</p>
+</div>
+
+<div class="watch-form-card">
+    <h2>Create a Watch</h2>
+    <form method="POST" action="/watches/add" class="watch-form">
+        <div class="form-row">
+            <div class="form-group">
+                <label for="label">Label</label>
+                <input type="text" name="label" id="label" placeholder="e.g. My size 10">
+            </div>
+            <div class="form-group">
+                <label for="size_exact">Exact Size (US)</label>
+                <input type="text" name="size_exact" id="size_exact" placeholder="e.g. 10, 10.5">
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="min_size">Min Size (US)</label>
+                <input type="text" name="min_size" id="min_size" placeholder="e.g. 9">
+            </div>
+            <div class="form-group">
+                <label for="max_size">Max Size (US)</label>
+                <input type="text" name="max_size" id="max_size" placeholder="e.g. 11">
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="max_price">Max Price ($)</label>
+                <input type="number" name="max_price" id="max_price" placeholder="e.g. 200" step="0.01">
+            </div>
+            <div class="form-group">
+                <label for="min_price">Min Price ($)</label>
+                <input type="number" name="min_price" id="min_price" placeholder="e.g. 50" step="0.01">
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary">➕ Add Watch</button>
+    </form>
+</div>
+
+<div class="watches-list">
+    <h2>Active Watches</h2>
+    {% for watch in watches %}
+    <div class="watch-card {% if not watch.active %}disabled{% endif %}">
+        <div class="watch-info">
+            <div class="watch-label">{{ watch.label or 'Watch #' + watch.id|string }}</div>
+            <div class="watch-criteria">
+                {% if watch.size_exact %}
+                <span class="tag size">Size = US {{ watch.size_exact }}</span>
+                {% endif %}
+                {% if watch.min_size or watch.max_size %}
+                <span class="tag size">Size {{ watch.min_size or '?' }} – {{ watch.max_size or '?' }}</span>
+                {% endif %}
+                {% if watch.min_price or watch.max_price %}
+                <span class="tag price">${{ watch.min_price or 0 }} – ${{ watch.max_price or '∞' }}</span>
+                {% endif %}
+                {% if not watch.size_exact and not watch.min_size and not watch.max_size and not watch.min_price and not watch.max_price %}
+                <span class="tag any">Any match</span>
+                {% endif %}
+            </div>
+            <div class="watch-stats">
+                <span class="alerts-sent">🔔 {{ watch.alerts_sent or 0 }} alerts sent</span>
+                <span class="created-at">Created {{ watch.created_at[:10] }}</span>
+            </div>
+        </div>
+        <div class="watch-actions">
+            <form method="POST" action="/watches/{{ watch.id }}/toggle" style="display:inline">
+                <button type="submit" class="btn btn-sm {% if watch.active %}btn-warning{% else %}btn-success{% endif %}">
+                    {% if watch.active %}⏸ Pause{% else %}▶ Resume{% endif %}
+                </button>
+            </form>
+            <form method="POST" action="/watches/{{ watch.id }}/delete" style="display:inline" onsubmit="return confirm('Delete this watch?')">
+                <button type="submit" class="btn btn-sm btn-danger">🗑 Delete</button>
+            </form>
+        </div>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-icon">🔔</div>
+        <h2>No watches yet</h2>
+        <p>Create a watch above to get notified when a Romaleos 2 in your size and price range appears on eBay.</p>
+        <p class="hint">💡 Make sure <code>DISCORD_WEBHOOK_URL</code> is set in <code>.env</code> to receive alerts.</p>
+    </div>
+    {% endfor %}
+</div>
+
+{% endblock %}
