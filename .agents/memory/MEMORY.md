@@ -1,0 +1,1 @@
+- [Python runtime setup](python-runtime-setup.md) — imported Python projects may need the full Replit Python tools module before pip installs work.

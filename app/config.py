@@ -10,8 +10,9 @@ from pathlib import Path
 @dataclass
 class Settings:
     # eBay API
-    ebay_client_id: str = os.getenv("EBAY_CLIENT_ID", "")
-    ebay_client_secret: str = os.getenv("EBAY_CLIENT_SECRET", "")
+    # Support both the documented names and eBay's dashboard terminology.
+    ebay_client_id: str = os.getenv("EBAY_CLIENT_ID") or os.getenv("APP_ID", "")
+    ebay_client_secret: str = os.getenv("EBAY_CLIENT_SECRET") or os.getenv("CERT_ID", "")
     ebay_marketplace: str = os.getenv("EBAY_MARKETPLACE", "EBAY_US")
     ebay_currency: str = os.getenv("EBAY_CURRENCY", "USD")
     ebay_site_id: str = os.getenv("EBAY_SITE_ID", "0")  # 0 = US
