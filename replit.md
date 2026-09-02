@@ -2,15 +2,22 @@
 
 ## Run
 
-The project runs as a single FastAPI web workflow:
+The project runs as a single FastAPI web workflow. The Replit config (`.replit`) pins
+the run command to the workspace `.venv/` so it always picks up the installed packages:
 
 ```bash
-python3 -m uvicorn app.main:app --host 0.0.0.0 --port 5000
+.venv/bin/python -m uvicorn app.main:app --host 0.0.0.0 --port 5000
 ```
 
-The Replit workflow is named `Start application` and serves the browser preview
-on port `5000`. The SQLite schema is created and migrated automatically on
-startup — no manual step.
+The `install` hook in `.replit` runs `.venv/bin/pip install -r requirements.txt` on boot
+so packages are restored automatically if the venv is ever missing.
+
+A workspace-local `.pip/pip.conf` overrides Replit's system pip config (which forces
+`--user` installs). Without it, `pip install` inside a venv fails with
+`Can not perform a '--user' install`. The local config lives at `.pip/pip.conf` in the
+workspace and is gitignored (not portable to other machines).
+
+The SQLite schema is created and migrated automatically on startup — no manual step.
 
 ## Environment
 
@@ -36,9 +43,27 @@ Optional Secrets:
 | `LISTING_PURGE_HOURS` | `24` | Delete listings not re-seen within N hours |
 | `LIVE_SEARCH_CACHE_SECONDS` | `120` | Throttle for page-load-triggered eBay calls |
 
-`PORT` is set to `5000` by the workflow. `SESSION_SECRET` is available in the
+`PORT` is set to `5000` in `.replit` `[env]`. `SESSION_SECRET` is available in the
 workspace; the app reads `SECRET_KEY` (currently unused — reserved for future
 session support).
+
+## Persistence on Replit
+
+Replit containers recycle periodically. Here's what stays and what doesn't:
+
+| Persists ✅ | Doesn't persist ❌ |
+|---|---|
+| `/home/runner/workspace/.venv/` — installed packages | Running processes |
+| `/home/runner/workspace/.pip/pip.conf` — pip override | Shell session state (`.bashrc` etc.) |
+| `/home/runner/workspace/.replit` — Replit config | |
+| `/home/runner/workspace/romaleos.db` — app data (gitignored) | |
+| `/home/runner/workspace/.env` — secrets (gitignored) | |
+| `/home/runner/workspace/.hermes/` — Hermes agent (see `scripts/hermes-persistence.md`) | |
+| `/home/runner/workspace/.gitignore`, source files, committed config | |
+
+The key point: everything important lives in `/home/runner/workspace/`. The `.venv/`
+directory is committed to gitignore but still sits in the workspace — Replit persists
+the directory itself; it just won't show up in `git push`.
 
 ## Behaviour notes
 

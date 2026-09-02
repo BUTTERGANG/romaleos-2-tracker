@@ -1,0 +1,51 @@
+modules = ["python-3.11"]
+
+# Auto-install packages on boot (survives container reset)
+install = ".venv/bin/pip install -r requirements.txt"
+
+[nix]
+channel = "stable-25_05"
+packages = ["libxcrypt", "unpackerr"]
+
+[agent]
+expertMode = true
+
+# Hermes agent persistence. Interactive shells get this (plus a self-heal
+# bootstrap) from $REPL_HOME/.config/bashrc; this block covers agent / workflow /
+# deployment shells, which do not source that file.
+[env]
+HERMES_HOME = "/home/runner/workspace/.hermes"
+PATH = "/home/runner/workspace/.hermes-bin:/home/runner/workspace/.hermes/node/bin:/home/runner/.local/bin:$PATH"
+PORT = "5000"
+
+[[ports]]
+localPort = 5000
+externalPort = 80
+
+[deployment]
+run = ["python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "5000"]
+deploymentTarget = "cloudrun"
+
+[workflows]
+runButton = "Project"
+
+[[workflows.workflow]]
+name = "Project"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Start application"
+
+[[workflows.workflow]]
+name = "Start application"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = ".venv/bin/python -m uvicorn app.main:app --host 0.0.0.0 --port 5000"
+waitForPort = 5000
+
+[workflows.workflow.metadata]
+outputType = "webview"

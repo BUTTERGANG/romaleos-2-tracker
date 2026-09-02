@@ -21,15 +21,14 @@ Track listings, filter by size/price/condition, and get notified when your perfe
 git clone https://github.com/BUTTERGANG/romaleos-2-tracker.git
 cd romaleos-2-tracker
 
-python -m venv venv && source venv/bin/activate
-pip install -r requirements.txt
+python -m venv .venv && .venv/bin/pip install -r requirements.txt
 
 cp .env.example .env      # then edit .env with your eBay API credentials
 
-uvicorn app.main:app --host 0.0.0.0 --port 8003
+.venv/bin/python -m uvicorn app.main:app --host 0.0.0.0 --port 5000
 ```
 
-Open <http://localhost:8003>. The `.env` file is loaded automatically (via `python-dotenv`).
+Open <http://localhost:5000>. The `.env` file is loaded automatically (via `python-dotenv`).
 
 Without eBay credentials the app still runs — it serves whatever is in the local
 cache (`romaleos.db`) and disables live search and polling.
@@ -162,7 +161,12 @@ empty database for local UI work.
 2. Add Secrets: `EBAY_CLIENT_ID`, `EBAY_CLIENT_SECRET`, and optionally `DISCORD_WEBHOOK_URL`.
 3. Run — the `Start application` workflow serves the preview on port `5000`.
 
-See [`replit.md`](replit.md) for Replit-specific notes.
+The Replit config (`.replit`) uses a workspace-local `.venv/` that survives container
+resets. Packages are auto-installed on boot via `install = ".venv/bin/pip install -r requirements.txt"`.
+A workspace-local `.pip/pip.conf` overrides Replit's system pip config (which forces
+user installs that don't always persist) so the venv stays clean and reliable.
+
+See [`replit.md`](replit.md) for Replit-specific notes and [`scripts/hermes-persistence.md`](scripts/hermes-persistence.md) for Hermes agent persistence notes.
 
 ## License
 
