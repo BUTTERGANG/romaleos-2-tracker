@@ -26,6 +26,11 @@ class Settings:
         "EBAY_USER_AGENT", "romaleos-2-tracker/1.0 (+https://github.com/BUTTERGANG/romaleos-2-tracker)"
     )
 
+    # eBay Proxy (shared cache — set these instead of EBAY_CLIENT_ID/KEY to
+    # route through the eBay API Proxy)
+    # ebay_proxy_url: str = os.getenv("EBAY_PROXY_URL", "")
+    # ebay_proxy_token: str = os.getenv("EBAY_PROXY_TOKEN", "")
+
     # App
     secret_key: str = os.getenv("SECRET_KEY", "change-me-in-production")
     database_url: str = os.getenv(
