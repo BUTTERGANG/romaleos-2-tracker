@@ -1,10 +1,10 @@
 /* ROMALEOS 2 Tracker — modern dark-themed UI */
 
 :root {
-    --bg: #0f1117;
-    --bg-card: #1a1d27;
-    --bg-nav: #151821;
-    --border: #2a2e3a;
+    --bg: #0b0f17;
+    --bg-card: #121a2b;
+    --bg-nav: rgba(11, 15, 23, .82);
+    --border: #24304a;
     --text: #e8eaed;
     --text-dim: #9aa0b0;
     --accent: #58a6ff;
@@ -13,8 +13,23 @@
     --yellow: #d29922;
     --red: #f85149;
     --orange: #d4761e;
-    --radius: 10px;
-    --radius-sm: 6px;
+    --radius: 16px;
+    --radius-sm: 8px;
+}
+/* Light mode — same blue brand accent, readable light surfaces */
+[data-theme="light"] {
+    --bg: #f2f5fa;
+    --bg-card: var(--text)fff;
+    --bg-nav: rgba(255, 255, 255, .85);
+    --border: #d3dce8;
+    --text: #18202b;
+    --text-dim: #5c6b7e;
+    --accent: #1f6feb;
+    --accent-hover: #1a5fd0;
+    --green: #1a7f37;
+    --yellow: #9a6700;
+    --red: #c93c37;
+    --orange: #b25e09;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -30,6 +45,8 @@ body {
 /* ── Nav ── */
 .nav {
     background: var(--bg-nav);
+    backdrop-filter: blur(18px) saturate(160%);
+    -webkit-backdrop-filter: blur(18px) saturate(160%);
     border-bottom: 1px solid var(--border);
     padding: 0 24px;
     position: sticky;
@@ -184,14 +201,14 @@ body {
 }
 .btn-primary {
     background: var(--accent);
-    color: #fff;
+    color: var(--text);
 }
 .btn-primary:hover { background: var(--accent-hover); }
 .btn-secondary {
     background: var(--border);
     color: var(--text);
 }
-.btn-secondary:hover { background: #353a48; }
+.btn-secondary:hover { background: var(--border); }
 .btn-warning {
     background: rgba(210, 153, 34, 0.15);
     color: var(--yellow);
@@ -252,7 +269,7 @@ body {
 .filter-field.filter-grow { flex: 3 1 200px; }
 .filter-field.filter-narrow { flex: 0 1 90px; }
 .filter-field label {
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 600;
     color: var(--text-dim);
     text-transform: uppercase;
@@ -306,7 +323,7 @@ body {
     left: 8px;
     z-index: 1;
     background: var(--green);
-    color: #0b0d14;
+    color: var(--bg-card);
     font-size: 10px;
     font-weight: 800;
     letter-spacing: 0.5px;
@@ -318,7 +335,7 @@ body {
     width: 100%;
     height: 200px;
     object-fit: contain;
-    background: #0b0d14;
+    background: var(--bg-card);
     border-bottom: 1px solid var(--border);
 }
 .listing-img-placeholder {
@@ -327,7 +344,7 @@ body {
     align-items: center;
     justify-content: center;
     font-size: 48px;
-    background: #0b0d14;
+    background: var(--bg-card);
     border-bottom: 1px solid var(--border);
 }
 
@@ -378,7 +395,7 @@ body {
     margin-bottom: 8px;
 }
 .tag {
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 600;
     padding: 3px 8px;
     border-radius: 100px;
@@ -578,3 +595,11 @@ body {
     from { opacity: 0; transform: translateX(20px); }
     to { opacity: 1; transform: translateX(0); }
 }
+/* ── Theme toggle ── */
+.theme-btn {
+    font-size: 13px; color: var(--text-dim); background: transparent;
+    border: 1px solid var(--border); border-radius: 8px;
+    padding: 4px 10px; cursor: pointer; transition: color .15s, border-color .15s;
+}
+.theme-btn:hover { color: var(--accent); border-color: var(--accent); }
+[data-theme="light"] .card { box-shadow: 0 4px 16px rgba(23,32,44,.08); }
